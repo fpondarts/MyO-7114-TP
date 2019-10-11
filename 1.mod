@@ -9,11 +9,11 @@ param capacidad{j in centros};
 
 
 /***** Se importan los " " datos del csv de votantes *****/
-table tin IN "CSV" "./data/votantes_reducido.csv" : 
-votantes <- [id], lat_vot ~ lat, long_vot ~ long;
+table tin IN "CSV" "./data/votantes.csv" : 
+votantes <- [id], lat_vot ~ latitud, long_vot ~ longitud;
 
 /***** Se importan los datos del csv de centros *****/
-table tin IN "CSV" "./data/centros_reducido.csv" :
+table tin IN "CSV" "./data/centros.csv" :
 centros <- [id], lat_cen ~ lat, long_cen ~ long, capacidad ~ max_votantes;
 
 
@@ -66,9 +66,10 @@ s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abr
 #s.t. Max300PorMesa{j in centros}: sum{i in votantes} y[i,j] <= 300 * mesas[j];
 
 #tomamos minimo de votantes 20 y cantidad de mesas minima igual a 1
-s.t. Min150PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 20 * 1 * abre[j] ;
+s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * 1 * abre[j] ;
 #tomamos maximo de votantes 70 y cantidad de mesas minima igual a 1
-s.t. Max300PorMesa{j in centros}: 20 * 1 + (50 * abre[j]) >= sum{i in votantes} y[i,j];
+#s.t. MaxPersonasPorMesa{j in centros}: 20 * 1 + (50 * abre[j]) >= sum{i in votantes} y[i,j];
+s.t. MaxPersonasPorMesa{j in centros}:  capacidad[j] * abre[j] >= sum{i in votantes} y[i,j];
 
 
 #s.t. DistMinSiSeAsigna{i in votantes, j in centros}: x[i] >= dist[i,j] * y[i,j];
