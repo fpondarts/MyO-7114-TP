@@ -9,11 +9,11 @@ param capacidad{j in centros};
 
 
 /***** Se importan los " " datos del csv de votantes *****/
-table tin IN "CSV" "./data/votantes.csv" : 
+table tin IN "CSV" "./data/votantes_reducido.csv" : 
 votantes <- [id], lat_vot ~ latitud, long_vot ~ longitud;
 
 /***** Se importan los datos del csv de centros *****/
-table tin IN "CSV" "./data/centros.csv" :
+table tin IN "CSV" "./data/centros_reducido.csv" :
 centros <- [id], lat_cen ~ lat, long_cen ~ long, capacidad ~ max_votantes;
 
 
