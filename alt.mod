@@ -9,11 +9,11 @@ param capacidad{j in centros};
 
 
 /***** Se importan los " " datos del csv de votantes *****/
-table tin IN "CSV" "./data/votantes_reducido.csv" : 
+table tin IN "CSV" "./data/votantes.csv" : 
 votantes <- [id], lat_vot ~ lat, long_vot ~ long;
 
 /***** Se importan los datos del csv de centros *****/
-table tin IN "CSV" "./data/centros_reducido.csv" :
+table tin IN "CSV" "./data/centros.csv" :
 centros <- [id], lat_cen ~ lat, long_cen ~ long, capacidad ~ max_votantes;
 
 
@@ -73,7 +73,6 @@ param haversine{f in 1..FILAS, c in 1..COLUMNAS, j in centros} := RADIO * aux_c[
 
 param M := 10000000;
 param m := 0.0000001;
-
 
 /***** Variables *****/
 

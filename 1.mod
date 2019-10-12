@@ -9,11 +9,11 @@ param capacidad{j in centros};
 
 
 /***** Se importan los " " datos del csv de votantes *****/
-table tin IN "CSV" "./data/votantes.csv" : 
-votantes <- [id], lat_vot ~ latitud, long_vot ~ longitud;
+table tin IN "CSV" "./data/votantes_reducido.csv" : 
+votantes <- [id], lat_vot ~ lat, long_vot ~ long;
 
 /***** Se importan los datos del csv de centros *****/
-table tin IN "CSV" "./data/centros.csv" :
+table tin IN "CSV" "./data/centros_reducido.csv" :
 centros <- [id], lat_cen ~ lat, long_cen ~ long, capacidad ~ max_votantes;
 
 
@@ -60,8 +60,6 @@ var x{i in votantes} >= 0;
 /* Distancia maxima que recorre un votante */
 var max_x >= 0;
 
-/* var mesas{j in centros}, integer >= 0; */
-
 
 /***** Objetivo *****/
 minimize z: sum{i in votantes} x[i] / card(votantes) + max_x;
@@ -77,7 +75,7 @@ s.t. DebeVotar{i in votantes}: sum{j in centros} y[i,j] = 1;
 s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abre[j];
 
 #tomamos minimo de votantes 120 y cantidad de mesas minima igual a 1
-s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * 1 * abre[j] ;
+s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 30 * 1 * abre[j] ;
 
 /*Calculo de distancia recorrida por el votante i*/
 s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} haversine[i,j] * y[i,j] = x[i];
