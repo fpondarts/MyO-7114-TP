@@ -13,13 +13,12 @@ table tin IN "CSV" "./data/votantes_reducido.csv" :
 votantes <- [id], lat_vot ~ lat, long_vot ~ long;
 
 /***** Se importan los datos del csv de centros *****/
-table tin IN "CSV" "./data/centros.csv" :
+table tin IN "CSV" "./data/centros_reducido.csv" :
 centros <- [id], lat_cen ~ lat, long_cen ~ long, capacidad ~ max_votantes;
 
 
 printf "\n\n\nCantidad de votantes: %d\n", card(votantes);
 printf "Cantidad de centros: %d\n", card(centros);
-
 /* En un momento pensé usar Manhattan, pero nada me garantiza */
 /* que la direccion de cada calle sea paralela */
 /* a la dirección en la que crece la latitud o la longitud */
@@ -44,48 +43,22 @@ param aux_c{i in votantes, j in centros} := 2 * atan( sqrt( aux_a[i,j] )/ sqrt( 
 
 param haversine{i in votantes, j in centros} := RADIO * aux_c[i,j];
 
-#table tout {i in votantes, j in centros} OUT "CSV" "./haversine.csv" :
-#i,j,haversine[i,j];
+table tout {i in votantes, j in centros} OUT "CSV" "./d_lat.csv" :
+i,j,d_lat[i,j];
 
-/***** Variables *****/
-/* 1 si el votante i fue asignado al centro j, 0 sino */
-var y{i in votantes, j in centros}, binary >= 0;
+table tout {i in votantes, j in centros} OUT "CSV" "./d_lon.csv" :
+i,j,d_long[i,j];
 
-/* 1 si el centro j se abre para la elección, 0 sino */
-var abre{j in centros}, binary >= 0;
+table tout {i in votantes, j in centros} OUT "CSV" "./aux_a.csv":
+i,j,aux_a[i,j];
 
-/* Distancia que recorre el votante i */
-var x{i in votantes} >= 0;
+table tout {i in votantes, j in centros} OUT "CSV" "./aux_c.csv":
+i,j,aux_c[i,j];
 
-/* Distancia maxima que recorre un votante */
-var max_x >= 0;
-
-/* var mesas{j in centros}, integer >= 0; */
+table tout {i in votantes, j in centros} OUT "CSV" "./haversine.csv" :
+i,j,haversine[i,j];
 
 
-/***** Objetivo *****/
-minimize z: sum{i in votantes} x[i] / card(votantes) + max_x;
-
-/***** Restricciones *****/
-s.t. DistanciaMaxima{i in votantes}: max_x >= x[i];
-
-s.t. DebeVotar{i in votantes}: sum{j in centros} y[i,j] = 1;
-
-/* Junto la restricción de la capacidad y la que dice que si */
-/* el centro está cerrado, no se le asignen votantes */
-#La bivalente abre[j] deberia encenderse cuando se cumpla la cantidad minima de mesas? 
-s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abre[j];
-
-#tomamos minimo de votantes 120 y cantidad de mesas minima igual a 1
-s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * 1 * abre[j] ;
-
-
-#s.t. DistMinSiSeAsigna{i in votantes, j in centros}: x[i] >= haversine[i,j] * y[i,j];
-#s.t. DistMaxSiSeAsigna{i in votantes, j in centros}: x[i] <= haversine[i,j] + 1000 * (1 - y[i,j]);
-/*Calculo de distancia recorrida por el votante i*/
-s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} haversine[i,j] * y[i,j] = x[i];
 
 
 end;
-
-
