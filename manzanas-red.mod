@@ -49,7 +49,6 @@ i,fila[i],columna[i];
 
 param VotantesManzana{f in 1..FILAS, c in 1..COLUMNAS} := sum{i in votantes: fila[i] == f && columna[i] == c} 1;
 printf "Suma de votantes es: %i\n", sum{f in 1..FILAS, c in 1..COLUMNAS} VotantesManzana[f,c];
-param IdVotantesManzana{f in 1..FILAS, c in 1..COLUMNAS} := set{i in votantes: fila[i] == f && columna[i] == c}
 
 
 
