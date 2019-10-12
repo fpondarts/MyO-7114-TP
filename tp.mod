@@ -26,9 +26,28 @@ printf "Cantidad de centros: %d\n", card(centros);
 /* Distancia Euclideana */
 param dist{i in votantes, j in centros} := sqrt(abs(lat_vot[i] - lat_cen[j]) ** 2 + abs(long_vot[i] - long_cen[j]) ** 2); 
 
+param RADIO := 6371000;
+
+param PI := 3.141592; 
+
+param latrad_vot{i in votantes} := lat_vot[i] * PI / 180;
+param latrad_cen{j in centros} := lat_cen[j] * PI / 180;
+param lonrad_vot{i in votantes} := long_vot[i] * PI / 180;
+param lonrad_cen{j in centros} := long_cen[j] * PI / 180;
+
+param d_lat{i in votantes, j in centros} := (latrad_cen[j] - latrad_vot[i]);
+param d_long{i in votantes, j in centros} := (lonrad_cen[j] - lonrad_vot[i]);
+
+param aux_a{i in votantes, j in centros} := ( sin( d_lat[i,j] / 2 ) ** 2 ) + cos( latrad_vot[i] ) * cos( latrad_cen[j] ) * ( sin( d_long[i,j] / 2 ) ** 2 ) ; 
+
+param aux_c{i in votantes, j in centros} := 2 * atan( sqrt( aux_a[i,j] )/ sqrt( 1 - aux_a[i,j] ) ) ;
+
+param haversine{i in votantes, j in centros} := RADIO * aux_c[i,j];
+
+#table tout {i in votantes, j in centros} OUT "CSV" "./haversine.csv" :
+#i,j,haversine[i,j];
 
 /***** Variables *****/
-
 /* 1 si el votante i fue asignado al centro j, 0 sino */
 var y{i in votantes, j in centros}, binary >= 0;
 
@@ -47,8 +66,6 @@ var max_x >= 0;
 /***** Objetivo *****/
 minimize z: sum{i in votantes} x[i] / card(votantes) + max_x;
 
-
-
 /***** Restricciones *****/
 s.t. DistanciaMaxima{i in votantes}: max_x >= x[i];
 
@@ -59,23 +76,12 @@ s.t. DebeVotar{i in votantes}: sum{j in centros} y[i,j] = 1;
 #La bivalente abre[j] deberia encenderse cuando se cumpla la cantidad minima de mesas? 
 s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abre[j];
 
-#¿El valor de mesas[j] es la cantidad de mesas que tiene el centro j?
-# o es la cantidad minima de mesas que deben abrirse para habilitar el centro j?
-#La cantidad minima de mesas para habilitar un centro es global, o es individual para cada establecimiento?
-#s.t. Min150PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 10 * 150;
-#s.t. Max300PorMesa{j in centros}: sum{i in votantes} y[i,j] <= 300 * mesas[j];
-
-#tomamos minimo de votantes 20 y cantidad de mesas minima igual a 1
+#tomamos minimo de votantes 120 y cantidad de mesas minima igual a 1
 s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * 1 * abre[j] ;
-#tomamos maximo de votantes 70 y cantidad de mesas minima igual a 1
-#s.t. MaxPersonasPorMesa{j in centros}: 20 * 1 + (50 * abre[j]) >= sum{i in votantes} y[i,j];
-s.t. MaxPersonasPorMesa{j in centros}:  capacidad[j] * abre[j] >= sum{i in votantes} y[i,j];
 
-
-#s.t. DistMinSiSeAsigna{i in votantes, j in centros}: x[i] >= dist[i,j] * y[i,j];
-#s.t. DistMaxSiSeAsigna{i in votantes, j in centros}: x[i] <= dist[i,j] + 1000 * (1 - y[i,j]);
 /*Calculo de distancia recorrida por el votante i*/
-s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} dist[i,j] * y[i,j] <= x[i];
+s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} haversine[i,j] * y[i,j] = x[i];
+
 
 end;
 
