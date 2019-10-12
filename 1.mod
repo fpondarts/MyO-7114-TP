@@ -79,9 +79,6 @@ s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abr
 #tomamos minimo de votantes 120 y cantidad de mesas minima igual a 1
 s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * 1 * abre[j] ;
 
-
-#s.t. DistMinSiSeAsigna{i in votantes, j in centros}: x[i] >= haversine[i,j] * y[i,j];
-#s.t. DistMaxSiSeAsigna{i in votantes, j in centros}: x[i] <= haversine[i,j] + 1000 * (1 - y[i,j]);
 /*Calculo de distancia recorrida por el votante i*/
 s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} haversine[i,j] * y[i,j] = x[i];
 
