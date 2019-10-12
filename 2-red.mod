@@ -76,7 +76,7 @@ s.t. DebeVotar{i in votantes}: sum{j in centros} y[i,j] = 1;
 s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abre[j];
 
 #tomamos minimo de votantes 120 y cantidad de mesas minima igual a 1
-s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 30 * 1 * abre[j] ;
+s.t. Min30PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 30 * 1 * abre[j] ;
 
 /*Calculo de distancia recorrida por el votante i*/
 s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} haversine[i,j] * y[i,j] = x[i];
