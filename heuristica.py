@@ -17,6 +17,17 @@ def haversine(lat1, lon1, lat2, lon2):
     r = 6371 # Radius of earth in kilometers. Use 3956 for miles
     return c * r
 
+
+def procesarCentros():
+ 	centros_procesados = {}
+ 	centros_file = open('data/centros_reducido.csv')
+ 	centros_csv = csv.reader(centros_file, delimiter=",")
+ 	next(centros_csv)
+ 	for centro_actual in centros_csv:
+ 		centros_procesados[int(centro_actual[0])] = int(centro_actual[3])
+ 	return centros_procesados
+
+
 def procesarDatos():
 
  	votantes_procesados = {}
@@ -43,18 +54,30 @@ def procesarDatos():
 
  	return votantes_procesados
 
-def asignarCentrosDeVotacion(diccionario_votantes, ids_votantes):
+
+def asignarCentrosDeVotacion(diccionario_votantes, ids_votantes, diccionario_centros):
 	centros_asignados = {}
 
 	for id_votante in ids_votantes:
 		#Extraigo de la lista el centro mas cercano o sea el primero
-		centro_cercano = diccionario_votantes[id_votante].pop(0)
-		if centro_cercano[0] not in centros_asignados:
-			centros_asignados[centro_cercano[0]] = [id_votante]
-		else:
-			centros_asignados[centro_cercano[0]].append(id_votante)
-		#Vuelo a meter el centro que extraido pero al final de la lista
-		diccionario_votantes[id_votante].append(centro_cercano)
+		centros_votante = diccionario_votantes[id_votante]
+		cont = 0
+		for centro_actual in centros_votante:
+			if centro_actual[0] not in centros_asignados:
+				centros_asignados[centro_actual[0]] = [id_votante]
+				centros_votante.pop(cont)
+				centros_votante.append(centro_actual)
+				cont+=1		
+				break
+			elif len(centros_asignados[centro_actual[0]]) < diccionario_centros[centro_actual[0]]:
+				centros_asignados[centro_actual[0]].append(id_votante)
+				centros_votante.pop(cont)
+				centros_votante.append(centro_actual)
+				cont+=1
+				break
+			else:
+				centros_votante.pop(cont)
+				cont+=1	
 	
 	return centros_asignados
 
@@ -63,7 +86,7 @@ def filtrarCentrosInvalidos(centros):
 	ids_centros = centros.keys()
 
 	for id_centro in ids_centros:
-		if len(centros[id_centro]) < 120:
+		if len(centros[id_centro]) < 30:
 			centros_invalidos[id_centro] = centros[id_centro]
 	return centros_invalidos
 
@@ -72,7 +95,7 @@ def filtrarCentrosValidos(centros):
 	ids_centros = centros.keys()
 
 	for id_centro in ids_centros:
-		if len(centros[id_centro]) >= 120:
+		if len(centros[id_centro]) >= 30:
 			centros_validos[id_centro] = centros[id_centro]
 	return centros_validos
 
@@ -91,25 +114,44 @@ def filtrarCentrosInvalidosDeLosVotantes(ids_votantes, ids_centros_validos, dicc
 	for id_votante in ids_votantes:
 		diccionario_votantes[id_votante] = list(filtrarCentros(diccionario_votantes[id_votante], list(ids_centros_validos)))
 
+def actualizarDisponibilidadCentrosAbiertos(centros_validos, diccionario_centros):
+	centros_ids = centros_validos.keys()
+	for id in centros_ids:
+		diccionario_centros[id] -= len(centros_validos[id])
+
+def actualizarVotantesDeCentrosAbiertos(centros_abiertos, centros_validos):
+	centros_validos_ids = centros_validos.keys()
+	for id in centros_validos_ids:
+		if id not in centros_abiertos:
+			centros_abiertos[id] = centros_validos[id]
+		else:
+			centros_abiertos[id] += centros_validos[id]
+
+def calcularDistanciaPromedio(diccionario_votantes, centros_abiertos):
+	distanciaPromedio = 0
 
 def heuristica():
 	centros_abiertos = {}
 	centros_invalidos = {}
 
+	diccionario_centros = procesarCentros()
 	diccionario_votantes = procesarDatos()
 	ids_votantes = diccionario_votantes.keys()
 
 	for cant_centros in range(1,31):
 		centros_invalidos.clear()
-		centros_elegidos = asignarCentrosDeVotacion(diccionario_votantes, ids_votantes)
+		centros_elegidos = asignarCentrosDeVotacion(diccionario_votantes, ids_votantes, diccionario_centros)
+		
 		centros_invalidos.update(filtrarCentrosInvalidos(centros_elegidos))
-		centros_abiertos.update(filtrarCentrosValidos(centros_elegidos))
+		centros_validos = filtrarCentrosValidos(centros_elegidos)
+		actualizarDisponibilidadCentrosAbiertos(centros_validos, diccionario_centros)
+		actualizarVotantesDeCentrosAbiertos(centros_abiertos, centros_validos)
 		ids_votantes = fusionarVotantesInvalidos(centros_invalidos)
 
 	filtrarCentrosInvalidosDeLosVotantes(ids_votantes, centros_abiertos.keys(), diccionario_votantes)
-	centros_validos_asignados = asignarCentrosDeVotacion(diccionario_votantes, ids_votantes)
+	centros_validos_asignados = asignarCentrosDeVotacion(diccionario_votantes, ids_votantes, diccionario_centros)
 
-	for centro_id in centros_abiertos.keys():
+	for centro_id in centros_validos_asignados.keys():
 		centros_abiertos[centro_id] += centros_validos_asignados[centro_id] 
 
 	#Se imprimen los resultados finales
