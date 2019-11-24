@@ -22,34 +22,44 @@ printf "Cantidad de centros: %d\n", card(centros);
 
 
 /* Un paso de 0.0011 grados en latitud/longitud */
+/* Esto se calculo utilizando google maps y trazando una línea */
+/* con distancia de 100m, dejando fija una coordenada y variando la otra */
 /* se corresponde con un paso de 100 metros aproximadamente */
 
 param PASO := 0.0011;
+
+/* Lat y Long maximas y minimas para obtener las dimensiones del circuito */
 param max_lat := max{i in votantes} lat_vot[i];
 param max_long := max{i in votantes} long_vot[i];
 param min_lat := min{i in votantes} lat_vot[i];
 param min_long := min{i in votantes} long_vot[i];
 
 
+/* Se obtienen las dimensiones del circuito */
 param ALTO := max_lat - min_lat ;
 param ANCHO := max_long - min_long ;
 
 
+/* Se modela al circuito como una matriz de FILAS y COLUMNAS */
+/* Cada elemento de la matriz se corresponde con un recinto de */
+/* 100 metros x 100 metros */
 param COLUMNAS := round( ANCHO / PASO ) + 1;
 param FILAS := round( ALTO / PASO ) + 1;
 
-printf "Filas: %d\n", FILAS;
-printf "Columnas %d\n",COLUMNAS;
-
+/* Se mapea cada votante a un elemento (fila,columna) de la matriz */
+/* En otras palabras, se calcula a que manzana pertenece cada votante */
 param fila{i in votantes} := round( (lat_vot[i] - min_lat) / PASO ) + 1; 
 param columna{i in votantes} := round( ( long_vot[i] - min_long ) / PASO ) + 1;
 
+/* Se genera un csv donde cada registro es */
+/* id_votante, fila, columna */
 table tout{i in votantes} OUT "CSV" "./matriz.csv":
 i,fila[i],columna[i];
 
+
+/* Se calcula la cantidad de votantes que tiene cada manzana */
 param VotantesManzana{f in 1..FILAS, c in 1..COLUMNAS} := sum{i in votantes: fila[i] == f && columna[i] == c} 1;
 printf "Suma de votantes es: %i\n", sum{f in 1..FILAS, c in 1..COLUMNAS} VotantesManzana[f,c];
-
 
 
 table tout{f in 1..FILAS, c in 1..COLUMNAS: VotantesManzana[f,c] > 0} OUT "CSV" "./votantes_manzana.csv":
@@ -85,13 +95,15 @@ var abre{j in centros}, binary >= 0;
 var y{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0}, binary >= 0;
 
 /* votantes de la manzana[i,j] asignados al centro j */
-var x{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0} >= 0;
+var x{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0}, integer >= 0;
+
+table tout{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0} OUT "CSV" "./asignaciones.csv":
+f,c,j,x[f,c,j];
 
 /* Distancia maxima que recorre un votante */
 var max_x >= 0;
 
 minimize z: sum{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0} haversine[f,c,j] * x[f,c,j] / card(votantes) + max_x;
-
 
 s.t. TotalManzana{f in 1..FILAS, c in 1..COLUMNAS :VotantesManzana[f,c] > 0}: sum{j in centros} x[f,c,j] = VotantesManzana[f,c];
 
@@ -104,5 +116,6 @@ s.t. EnvioAlguno{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[
 s.t. EnvioAlgunoBis{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0}: x[f,c,j] >= 1 * y[f,c,j];
 
 s.t. DistMax{f in 1..FILAS, c in 1..COLUMNAS, j in centros: VotantesManzana[f,c] > 0}: max_x >= haversine[f,c,j] * y[f,c,j];
+
 
 end;
