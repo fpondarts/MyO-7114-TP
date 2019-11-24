@@ -9,12 +9,11 @@ param capacidad{j in centros};
 
 
 /***** Se importan los " " datos del csv de votantes *****/
-table tin IN "CSV" "./data/votantes.csv" : 
+table tin IN "CSV" "./data/votantes_reducido.csv" : 
 votantes <- [id], lat_vot ~ lat, long_vot ~ long;
 
-
 /***** Se importan los datos del csv de centros *****/
-table tin IN "CSV" "./data/centros.csv" :
+table tin IN "CSV" "./data/centros_reducido.csv" :
 centros <- [id], lat_cen ~ lat, long_cen ~ long, capacidad ~ max_votantes;
 
 
@@ -73,10 +72,10 @@ s.t. DebeVotar{i in votantes}: sum{j in centros} y[i,j] = 1;
 /* Junto la restricción de la capacidad y la que dice que si */
 /* el centro está cerrado, no se le asignen votantes */
 #La bivalente abre[j] deberia encenderse cuando se cumpla la cantidad minima de mesas? 
-s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= capacidad[j] * abre[j];
+s.t. CapacidadMax{j in centros}: sum{i in votantes} y[i,j] <= 2000 * abre[j];
 
 #tomamos minimo de votantes 120 y cantidad de mesas minima igual a 1
-s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * 1 * abre[j] ;
+s.t. Min120PorMesa{j in centros}: sum{i in votantes} y[i,j] >= 120 * abre[j];
 
 /*Calculo de distancia recorrida por el votante i*/
 s.t. DistRecorridaPorVotanteI{i in votantes} : sum{j in centros} haversine[i,j] * y[i,j] = x[i];
