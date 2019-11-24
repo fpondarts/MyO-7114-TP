@@ -128,7 +128,25 @@ def actualizarVotantesDeCentrosAbiertos(centros_abiertos, centros_validos):
 			centros_abiertos[id] += centros_validos[id]
 
 def calcularDistanciaPromedio(diccionario_votantes, centros_abiertos):
-	distanciaPromedio = 0
+	distanciaTotal = 0
+	centros_ids = centros_abiertos.keys()
+	for id in centros_ids:
+		lista_votantes = centros_abiertos[id]
+		for votante in lista_votantes:
+			centro_votado = list(filter(lambda t: t[0] == id, diccionario_votantes[votante]))
+			distanciaTotal += centro_votado[0][1]
+	return distanciaTotal/1134
+
+def distanciaMaximaRecorrida(diccionario_votantes, centros_abiertos):
+	distanciaMax = 0;
+	centros_ids = centros_abiertos.keys()
+	for id in centros_ids:
+		lista_votantes = centros_abiertos[id]
+		for votante in lista_votantes:
+			centro_votado = list(filter(lambda t: t[0] == id, diccionario_votantes[votante]))
+			if distanciaMax < centro_votado[0][1]:
+				distanciaMax = centro_votado[0][1]
+	return distanciaMax
 
 def heuristica():
 	centros_abiertos = {}
@@ -161,4 +179,10 @@ def heuristica():
 		print("centro", i, "votantes:", len(centros_abiertos[i]), "\n")
 
 
+	distanciaProm = calcularDistanciaPromedio(diccionario_votantes, centros_abiertos)
+	distanciaMax = distanciaMaximaRecorrida(diccionario_votantes, centros_abiertos)
+
+	print("distancia promedio:", distanciaProm)
+	print("distancia maxima recorrida:", distanciaMax)
+	print("Total:", distanciaMax + distanciaProm)
 heuristica()
