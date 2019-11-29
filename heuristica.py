@@ -135,10 +135,10 @@ def calcularDistanciaPromedio(diccionario_votantes, centros_abiertos):
 		for votante in lista_votantes:
 			centro_votado = list(filter(lambda t: t[0] == id, diccionario_votantes[votante]))
 			distanciaTotal += centro_votado[0][1]
-	return distanciaTotal/1134
+	return distanciaTotal/len(diccionario_votantes)
 
 def distanciaMaximaRecorrida(diccionario_votantes, centros_abiertos):
-	distanciaMax = 0;
+	distanciaMax = 0
 	centros_ids = centros_abiertos.keys()
 	for id in centros_ids:
 		lista_votantes = centros_abiertos[id]
@@ -147,6 +147,55 @@ def distanciaMaximaRecorrida(diccionario_votantes, centros_abiertos):
 			if distanciaMax < centro_votado[0][1]:
 				distanciaMax = centro_votado[0][1]
 	return distanciaMax
+
+def centroConMenosVotantes(diccionario_centros):
+	minimo = 10000
+	centro_min = -1
+	for centro in diccionario_centros:
+		votantes = len(diccionario_centros[centro])
+		if votantes < minimo:
+			minimo = votantes
+			centro_min = centro
+	return centro_min			
+
+def vacantesDisponibles(centros_elegidos,id_centro,diccionario_centros):
+	vacantes = 0
+	for centro in centros_elegidos:
+		if centro == id_centro:
+			continue
+		vacantes += diccionario_centros[centro]
+	return vacantes
+
+def centroDisponibleMasCercano(votante,dict_votantes,id_centro,centros_elegidos,dict_centros):
+	elegido = -1
+	for tupla in dict_votantes[votante]:
+		centro = tupla[0]
+		if id_centro == centro:
+			continue
+		if (centro in centros_elegidos) and dict_centros[centro] > 0:
+			elegido = centro
+			break
+	return elegido
+
+def getDistanciaVotante(votante,diccionario_votantes,centro):
+	for tupla_centro in diccionario_votantes[votante]:
+		if tupla_centro[0] == centro:
+			return tupla_centro[1]
+
+def obtenerMejorReubicacion(diccionario_votantes,centros_elegidos,id_centro,diccionario_centros):
+	id_votante = -1
+	centro_votante = -1
+	minima = 10000
+	for centro in centros_elegidos:
+		if (centro == id_centro) or (diccionario_centros[centro] == 0): 
+			continue
+		for votante in centros_elegidos[centro]:
+			dist = getDistanciaVotante(votante,diccionario_votantes,centro)
+			if dist < minima:
+				minima = dist
+				id_votante = votante
+				centro_votante = centro
+	return id_votante, centro_votante
 
 def heuristica():
 	centros_abiertos = {}
@@ -159,7 +208,6 @@ def heuristica():
 	for cant_centros in range(1,31):
 		centros_invalidos.clear()
 		centros_elegidos = asignarCentrosDeVotacion(diccionario_votantes, ids_votantes, diccionario_centros)
-		
 		centros_invalidos.update(filtrarCentrosInvalidos(centros_elegidos))
 		centros_validos = filtrarCentrosValidos(centros_elegidos)
 		actualizarDisponibilidadCentrosAbiertos(centros_validos, diccionario_centros)
@@ -185,4 +233,70 @@ def heuristica():
 	print("distancia promedio:", distanciaProm)
 	print("distancia maxima recorrida:", distanciaMax)
 	print("Total:", distanciaMax + distanciaProm)
+
+
+def heuristica_fix():
+	centros_abiertos = {}
+	centros_invalidos = {}
+
+	caso_particular = False
+
+	diccionario_centros = procesarCentros()
+	diccionario_votantes = procesarDatos()
+	ids_votantes = diccionario_votantes.keys()
+
+	centros_elegidos = asignarCentrosDeVotacion(diccionario_votantes, ids_votantes, diccionario_centros)
+
+	centros_invalidos.update(filtrarCentrosInvalidos(centros_elegidos))
+	actualizarDisponibilidadCentrosAbiertos(centros_elegidos, diccionario_centros)
+
+	while len(centros_invalidos) > 0:
+		id_centro = centroConMenosVotantes(centros_invalidos)
+		cantidad_de_votantes = len(centros_invalidos[id_centro])
+		vacantes_disponibles = vacantesDisponibles(centros_elegidos,id_centro,diccionario_centros)
+
+		if (cantidad_de_votantes > vacantes_disponibles):
+			print("Vacantes disponibles: "+str(vacantesDisponibles))
+			print("Votantes: " + str(cantidad_de_votantes))
+			caso_particular = True
+			break
+
+		for votante in centros_invalidos[id_centro]:
+			centro = centroDisponibleMasCercano(votante,diccionario_votantes,id_centro,centros_elegidos,diccionario_centros)
+			centros_elegidos[centro].append(votante)
+			diccionario_centros[centro] -= 1
+
+		centros_invalidos.clear()
+		del centros_elegidos[id_centro]
+		centros_invalidos.update(filtrarCentrosInvalidos(centros_elegidos))
+
+
+	if caso_particular:
+		while len(centros_elegidos[id_centro]) < 30:
+			id_votante,centro_votante = obtenerMejorReubicacion(diccionario_votantes,centros_elegidos,id_centro,diccionario_centros)
+			centros_elegidos[id_centro].append(id_votante)
+			centros_elegidos[centro_votante].remove(id_votante)
+			diccionario_centros[centro_votante]-=1
+			diccionario_centros[id_centro]+=1
+
+			
+
+	total = 0
+	for centro in centros_elegidos:
+		cantidad = len(centros_elegidos[centro])
+		print("Centro " +str(centro) + ": "+str(cantidad) +" votantes")
+		total+=cantidad
+	print("Total votantes " + str(total))
+
+	distanciaProm = calcularDistanciaPromedio(diccionario_votantes, centros_elegidos)
+	distanciaMax = distanciaMaximaRecorrida(diccionario_votantes, centros_elegidos)
+
+	print("distancia promedio:", distanciaProm)
+	print("distancia maxima recorrida:", distanciaMax)
+	print("Total:", distanciaMax + distanciaProm)
+
+
 heuristica()
+
+print("************FIN HEURISTICA***********")
+heuristica_fix()
